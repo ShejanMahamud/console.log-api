@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/create-user.dto';
+import { GithubLoginDto } from './dto/github-login.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 
 @Controller('auth')
@@ -41,5 +42,15 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req: Request) {
     return this.authService.googleLogin(req.user as GoogleLoginDto);
+  }
+
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  async githubAuth() {}
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubAuthCallback(@Req() req: Request) {
+    return this.authService.githubLogin(req.user as GithubLoginDto);
   }
 }

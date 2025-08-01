@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { UploadModule } from 'src/upload/upload.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { GithubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
@@ -14,6 +15,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     JwtAccessStrategy,
     JwtRefreshStrategy,
     GoogleStrategy,
+    GithubStrategy,
   ],
   controllers: [AuthController],
 })

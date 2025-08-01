@@ -9,6 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UploadService } from 'src/upload/upload.service';
 import { Util } from 'src/utils/util';
 import { RegisterUserDto } from './dto/create-user.dto';
+import { GithubLoginDto } from './dto/github-login.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -192,6 +193,43 @@ export class AuthService {
     return {
       success: true,
       message: 'Google login successful',
+      data: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
+    };
+  }
+
+  public async githubLogin(data: GithubLoginDto) {
+    let user = await this.prisma.user.findUnique({
+      where: {
+        email: data.email,
+      },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          ...data,
+          provider: 'github',
+        },
+      });
+    }
+    const tokens = await this.generateTokens({
+      sub: user.id,
+      email: user.email,
+    });
+    const hashedToken = await Util.hash(tokens.refreshToken);
+    await this.updateUser(
+      {
+        refreshToken: hashedToken,
+        refreshTokenExp: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+      },
+      user.id,
+    );
+    return {
+      success: true,
+      message: 'Github login successful',
       data: {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
