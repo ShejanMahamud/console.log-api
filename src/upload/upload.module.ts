@@ -1,12 +1,14 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { UploadProcessor } from './upload.processor';
 import { UploadService } from './upload.service';
 
 @Module({
   imports: [],
   providers: [
     UploadService,
+    UploadProcessor,
     {
       provide: 'AWS_S3',
       inject: [ConfigService],

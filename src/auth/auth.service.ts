@@ -80,7 +80,6 @@ export class AuthService {
 
   //register a user
   public async registerUser(data: RegisterUserDto, file: Express.Multer.File) {
-    // console.log(data, file);
     const verifyToken = Util.genToken();
     const verifyTokenExp = new Date(Date.now() + 1000 * 60 + 15);
     const profilePicture = await this.upload.uploadAndGetUrl(file);

@@ -13,7 +13,7 @@ model User {
   username        String    @unique
   name            String
   email           String    @unique
-  profilePicture String    
+  profilePicture  String
   password        String
   role            UserRole  @default(user)
   refreshToken    String?
