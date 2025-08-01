@@ -1,13 +1,19 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
+  Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/create-user.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -25,5 +31,15 @@ export class AuthController {
     @UploadedFile() profilePicture: Express.Multer.File,
   ) {
     return this.authService.registerUser(data, profilePicture);
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthCallback(@Req() req: Request) {
+    return this.authService.googleLogin(req.user as GoogleLoginDto);
   }
 }

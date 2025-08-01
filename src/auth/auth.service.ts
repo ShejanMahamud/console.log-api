@@ -1,9 +1,18 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UploadService } from 'src/upload/upload.service';
 import { Util } from 'src/utils/util';
 import { RegisterUserDto } from './dto/create-user.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
+import { LoginDto } from './dto/login-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { IJwtPayload } from './types';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +30,9 @@ export class AuthService {
 
     //inject upload service
     private readonly upload: UploadService,
+
+    //inject jwt service
+    private readonly jwt: JwtService,
   ) {
     //access token secret
     this.accessTokenSecret = config.get<string>(
@@ -32,11 +44,11 @@ export class AuthService {
     ) as string;
     //access token expires
     this.accessTokenExpiresIn = config.get<string>(
-      'ACCESS_TOKEN_EXPIRES_IN',
+      'ACCESS_TOKEN_EXPIRES',
     ) as string;
     //refresh token expires
     this.refreshTokenExpiresIn = config.get<string>(
-      'REFRESH_TOKEN_EXPIRES_IN',
+      'REFRESH_TOKEN_EXPIRES',
     ) as string;
   }
 
@@ -99,6 +111,126 @@ export class AuthService {
     return {
       success: true,
       message: 'Register Successful!',
+    };
+  }
+
+  //login a user
+  public async loginUser(data: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: data.email,
+        emailVerified: true,
+        isDeleted: false,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found for this email!');
+    }
+    if (user.provider === 'email') {
+      if (!user.password) {
+        throw new BadRequestException(
+          'Password not set for this user. use social login',
+        );
+      }
+
+      const isMatched = await this.isMatched(user.password, data.password);
+      if (!isMatched) {
+        throw new BadRequestException('Credentials are not matched');
+      }
+    }
+
+    const tokens = await this.generateTokens({
+      email: user.email,
+      sub: user.id,
+    });
+    const hashedToken = await Util.hash(tokens.refreshToken);
+    await this.updateUser(
+      {
+        refreshToken: hashedToken,
+        refreshTokenExp: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+        provider: 'email',
+      },
+      user.id,
+    );
+    return {
+      success: true,
+      message: 'Logged in successfully!',
+      data: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
+    };
+  }
+
+  public async googleLogin(data: GoogleLoginDto) {
+    let user = await this.prisma.user.findUnique({
+      where: {
+        email: data.email,
+      },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          ...data,
+          provider: 'google',
+        },
+      });
+    }
+    const tokens = await this.generateTokens({
+      sub: user.id,
+      email: user.email,
+    });
+    const hashedToken = await Util.hash(tokens.refreshToken);
+    await this.updateUser(
+      {
+        refreshToken: hashedToken,
+        refreshTokenExp: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+      },
+      user.id,
+    );
+    return {
+      success: true,
+      message: 'Google login successful',
+      data: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
+    };
+  }
+
+  private async generateTokens(data: IJwtPayload) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwt.sign(data, {
+        secret: this.accessTokenSecret,
+        expiresIn: this.accessTokenExpiresIn,
+      }),
+      this.jwt.sign(data, {
+        secret: this.refreshTokenSecret,
+        expiresIn: this.refreshTokenExpiresIn,
+      }),
+    ]);
+    return { accessToken, refreshToken };
+  }
+
+  public async updateUser(data: Partial<UpdateUserDto>, id: string) {
+    const user = await this.isUserExists({ id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const updatedUser = await this.prisma.user.update({
+      where: {
+        id,
+        isDeleted: false,
+      },
+      data: {
+        ...data,
+      },
+    });
+    return {
+      success: true,
+      message: 'User updated successfully!',
+      data: updatedUser,
     };
   }
 }

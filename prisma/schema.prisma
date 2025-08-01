@@ -14,8 +14,9 @@ model User {
   name            String
   email           String    @unique
   profilePicture  String
-  password        String
+  password        String?
   role            UserRole  @default(user)
+  provider        Provider  @default(email)
   refreshToken    String?
   refreshTokenExp DateTime?
   verifyToken     String?
@@ -34,4 +35,10 @@ enum UserRole {
   user
   admin
   moderator
+}
+
+enum Provider {
+  google
+  github
+  email
 }

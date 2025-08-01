@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 @Global()
 @Module({
   imports: [
+    //configure bullmq
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -15,10 +16,27 @@ import { ConfigService } from '@nestjs/config';
         },
       }),
     }),
+    //register a queue with default options
     BullModule.registerQueue({
       name: 'uploader',
+      defaultJobOptions: {
+        removeOnComplete: {
+          age: 3600,
+          count: 1000,
+        },
+        removeOnFail: {
+          age: 86400,
+          count: 100,
+        },
+        attempts: 3,
+        backoff: {
+          delay: 3000,
+          type: 'exponential',
+        },
+      },
     }),
   ],
+  //export the configured bullmodule
   exports: [BullModule],
 })
 export class QueueModule {}
