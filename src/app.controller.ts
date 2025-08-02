@@ -1,18 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiExcludeController } from '@nestjs/swagger';
-import { getSystemInfoJson } from './utils/system-info';
+import { AppService } from './app.service';
 
-@ApiExcludeController()
 @Controller()
 export class AppController {
-  constructor() {}
+  constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello() {
-    return {
-      success: true,
-      message: 'Server is operational',
-      meta: getSystemInfoJson(),
-    };
+  getHello(): string {
+    return this.appService.getHello();
   }
 }
