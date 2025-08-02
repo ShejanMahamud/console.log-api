@@ -16,29 +16,32 @@ export class UpdateUserDto extends PartialType(RegisterUserDto) {
 
   @IsString()
   @IsOptional()
-  refreshToken: string;
+  refreshToken: string | null;
 
   @IsDate()
   @IsOptional()
-  refreshTokenExp: Date;
+  refreshTokenExp: Date | null;
 
   @IsString()
   @IsOptional()
-  verifyToken: string;
+  verifyToken: string | null;
 
   @IsDate()
   @IsOptional()
-  verifyTokenExp: Date;
+  verifyTokenExp: Date | null;
 
   @IsString()
   @IsOptional()
-  resetToken: string;
+  resetToken: string | null;
 
   @IsDate()
   @IsOptional()
-  resetTokenExp: Date;
+  resetTokenExp: Date | null;
 
   @IsBoolean()
   @IsOptional()
   isDeleted: boolean;
+  @IsBoolean()
+  @IsOptional()
+  emailVerified: boolean;
 }
