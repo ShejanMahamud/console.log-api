@@ -124,10 +124,12 @@ export class AuthService {
     }
     //hash verify token
     const hashedToken = await Util.hash(verifyToken);
+    const hashedPass = await Util.hash(data.password);
     //if not exists then create user
     const user = await this.prisma.user.create({
       data: {
         ...data,
+        password: hashedPass,
         profilePicture,
         verifyToken: hashedToken,
         verifyTokenExp,
@@ -326,6 +328,9 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException('User not found for this email!');
     }
+    if (user?.refreshToken) {
+      throw new BadRequestException("You're already logged in");
+    }
     //if login provider is email then check user has password or not
     if (user.provider === 'email') {
       if (!user.password) {
@@ -361,6 +366,10 @@ export class AuthService {
       },
     });
 
+    if (user?.refreshToken) {
+      throw new BadRequestException("You're already logged in");
+    }
+
     //if not create a user
     if (!user) {
       user = await this.prisma.user.create({
@@ -371,7 +380,7 @@ export class AuthService {
       });
     }
     //set and get tokens
-    const tokens = await this.saveTokenInDb(user.id, user.email, 'email');
+    const tokens = await this.saveTokenInDb(user.id, user.email, 'google');
     //return data
     return {
       success: true,
@@ -391,6 +400,10 @@ export class AuthService {
         email: data.email,
       },
     });
+
+    if (user?.refreshToken) {
+      throw new BadRequestException("You're already logged in");
+    }
 
     //if not then create a user
     if (!user) {

@@ -25,6 +25,7 @@ export class ResponseInterceptor implements NestInterceptor {
           data,
           message,
           meta: {
+            ip: request.ip,
             status_code: statusCode,
             response_time: `${duration}ms`,
             timestamp: Date.now(),

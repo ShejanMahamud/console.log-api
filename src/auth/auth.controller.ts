@@ -29,6 +29,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
+import { IsLoggedIn } from 'src/guards/isLoggedIn';
 import { AuthService } from './auth.service';
 import { AccountVerifyDto } from './dto/account-verify.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -108,7 +109,7 @@ export class AuthController {
   }
 
   @Get('google')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(AuthGuard('google'), IsLoggedIn)
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Initiate Google OAuth login' })
   @ApiResponse({
