@@ -25,12 +25,13 @@ export type MailJob =
   | Job<VerificationMailData, any, 'account-verify-email'>
   | Job<PasswordResetMailData, any, 'reset-password-email'>;
 
+//define processor and set concurrency(can send 10 email at a time) at 10
 @Processor('mailer', { concurrency: 10 })
 export class MailProcessor extends WorkerHost {
   constructor(private mailerService: MailerService) {
     super();
   }
-
+  //use process for job process
   async process(job: MailJob): Promise<any> {
     switch (job.name) {
       case 'account-verify-email': {
@@ -63,7 +64,7 @@ export class MailProcessor extends WorkerHost {
           },
         });
       }
-
+      //throw error if not match job
       default:
         throw new NotFoundException(`Email job type not found`);
     }

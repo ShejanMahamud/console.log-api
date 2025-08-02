@@ -9,6 +9,7 @@ export class MailService {
     @InjectQueue('mailer') private mailQueue: Queue,
   ) {}
 
+  //send account verify email
   public async sendAccountVerifyEmail(data: {
     to: string;
     userName: string;
@@ -17,7 +18,9 @@ export class MailService {
   }) {
     await this.mailQueue.add('account-verify-email', data);
   }
-  async passwordResetEmail(data: {
+
+  //send password reset email
+  public async passwordResetEmail(data: {
     to: string;
     name: string;
     resetUrl: string;

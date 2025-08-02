@@ -9,7 +9,9 @@ import { MailService } from './mail.service';
 
 @Module({
   imports: [
+    //import queue module
     QueueModule,
+    //setup mailer module
     MailerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -34,7 +36,9 @@ import { MailService } from './mail.service';
       }),
     }),
   ],
+  //inject mail service and processors
   providers: [MailService, MailProcessor],
+  //export for use in other services
   exports: [MailService],
 })
 export class MailModule {}
