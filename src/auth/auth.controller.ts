@@ -34,20 +34,24 @@ export class AuthController {
     return this.authService.registerUser(data, profilePicture);
   }
 
+  //google login route
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {}
 
+  //google login callback route
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req: Request) {
     return this.authService.googleLogin(req.user as GoogleLoginDto);
   }
 
+  //github login route
   @Get('github')
   @UseGuards(AuthGuard('github'))
   async githubAuth() {}
 
+  //github login callback route
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
   async githubAuthCallback(@Req() req: Request) {

@@ -93,14 +93,19 @@ export class AuthService {
 
   //register a user
   public async registerUser(data: RegisterUserDto, file: Express.Multer.File) {
+    //verify token gen
     const verifyToken = Util.genToken();
+    //gen verify token exp
     const verifyTokenExp = new Date(Date.now() + 1000 * 60 + 15);
+    //upload image to queue
     const profilePicture = await this.upload.uploadAndGetUrl(file);
+    //check if user exists
     const isExist = await this.isUserExists({ email: data.email });
 
     if (isExist) {
       return new BadRequestException('User already exists');
     }
+    //if not exists then create user
     await this.prisma.user.create({
       data: {
         ...data,
@@ -109,6 +114,7 @@ export class AuthService {
         verifyTokenExp,
       },
     });
+    //return data
     return {
       success: true,
       message: 'Register Successful!',
@@ -127,24 +133,28 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException('User not found for this email!');
     }
+    //if login provider is email then check user has password or not
     if (user.provider === 'email') {
       if (!user.password) {
         throw new BadRequestException(
           'Password not set for this user. use social login',
         );
       }
-
+      //check if password or not
       const isMatched = await this.isMatched(user.password, data.password);
+
       if (!isMatched) {
         throw new BadRequestException('Credentials are not matched');
       }
     }
-
+    //generate tokens
     const tokens = await this.generateTokens({
       email: user.email,
       sub: user.id,
     });
+    //hash refresh token
     const hashedToken = await Util.hash(tokens.refreshToken);
+    //save hashed refresh token in db
     await this.updateUser(
       {
         refreshToken: hashedToken,
@@ -153,6 +163,7 @@ export class AuthService {
       },
       user.id,
     );
+    //return data
     return {
       success: true,
       message: 'Logged in successfully!',
@@ -164,12 +175,14 @@ export class AuthService {
   }
 
   public async googleLogin(data: GoogleLoginDto) {
+    //check if user exists
     let user = await this.prisma.user.findUnique({
       where: {
         email: data.email,
       },
     });
 
+    //if not create a user
     if (!user) {
       user = await this.prisma.user.create({
         data: {
@@ -178,11 +191,14 @@ export class AuthService {
         },
       });
     }
+    //generate tokens
     const tokens = await this.generateTokens({
       sub: user.id,
       email: user.email,
     });
+    //hash refresh token in db
     const hashedToken = await Util.hash(tokens.refreshToken);
+    //save hashed refresh token in db
     await this.updateUser(
       {
         refreshToken: hashedToken,
@@ -190,6 +206,7 @@ export class AuthService {
       },
       user.id,
     );
+    //return data
     return {
       success: true,
       message: 'Google login successful',
@@ -200,13 +217,16 @@ export class AuthService {
     };
   }
 
+  //github login
   public async githubLogin(data: GithubLoginDto) {
+    //find if user exists
     let user = await this.prisma.user.findUnique({
       where: {
         email: data.email,
       },
     });
 
+    //if not then create a user
     if (!user) {
       user = await this.prisma.user.create({
         data: {
@@ -215,11 +235,14 @@ export class AuthService {
         },
       });
     }
+    //generate two tokens
     const tokens = await this.generateTokens({
       sub: user.id,
       email: user.email,
     });
+    //hash the refresh token
     const hashedToken = await Util.hash(tokens.refreshToken);
+    //save the refresh token with 7d expiration
     await this.updateUser(
       {
         refreshToken: hashedToken,
@@ -227,6 +250,7 @@ export class AuthService {
       },
       user.id,
     );
+    //send response to client
     return {
       success: true,
       message: 'Github login successful',
@@ -237,25 +261,34 @@ export class AuthService {
     };
   }
 
+  //generate access & refresh token
   private async generateTokens(data: IJwtPayload) {
+    //generating both token using jwt
     const [accessToken, refreshToken] = await Promise.all([
+      //access token
       this.jwt.sign(data, {
         secret: this.accessTokenSecret,
         expiresIn: this.accessTokenExpiresIn,
       }),
+      //refresh token
       this.jwt.sign(data, {
         secret: this.refreshTokenSecret,
         expiresIn: this.refreshTokenExpiresIn,
       }),
     ]);
+    //return both
     return { accessToken, refreshToken };
   }
 
+  //update user route
   public async updateUser(data: Partial<UpdateUserDto>, id: string) {
+    //check user exists or not
     const user = await this.isUserExists({ id });
+    //if not then throw an exception
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    //update the user
     const updatedUser = await this.prisma.user.update({
       where: {
         id,
@@ -265,6 +298,7 @@ export class AuthService {
         ...data,
       },
     });
+    //return data
     return {
       success: true,
       message: 'User updated successfully!',
